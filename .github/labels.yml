@@ -1,0 +1,13 @@
+labels:
+  - name: area:architecture
+    color: 0052cc
+    description: Architecture and platform foundation work.
+  - name: area:docs
+    color: 0e8a16
+    description: Documentation and governance updates.
+  - name: area:infra
+    color: 5319e7
+    description: DevOps, CI, and repository automation.
+  - name: type:chore
+    color: cfd3d7
+    description: Maintenance or repository hygiene work.

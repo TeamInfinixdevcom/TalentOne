@@ -1,0 +1,8 @@
+{
+  "name": "@talentone/web",
+  "private": true,
+  "version": "0.0.0",
+  "dependencies": {
+    "firebase": "^12.9.1"
+  }
+}

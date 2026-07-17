@@ -1,0 +1,20 @@
+name: Bug report
+description: Report a platform defect or unexpected behavior.
+title: "[Bug]: "
+labels:
+  - type:chore
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Repository area, environment, and impact.
+    validations:
+      required: true

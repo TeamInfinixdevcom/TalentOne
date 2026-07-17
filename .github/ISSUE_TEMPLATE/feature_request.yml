@@ -1,0 +1,20 @@
+name: Feature request
+description: Capture a new platform capability or repository improvement.
+title: "[Feature]: "
+labels:
+  - area:architecture
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What capability is missing or needs improvement.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: What success looks like.
+    validations:
+      required: true
