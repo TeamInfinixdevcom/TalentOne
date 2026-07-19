@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function roleList() {
+      return signedIn() && request.auth.token.roles is list ? request.auth.token.roles : [];
+    }
+
+    function hasAnyRole(allowedRoles) {
+      return signedIn() && roleList().hasAny(allowedRoles);
+    }
+
+    function isPlatformAdmin() {
+      return hasAnyRole(['MASTER', 'ADMIN']);
+    }
+
+    function ownsCandidateFolder(uid) {
+      return signedIn() && request.auth.uid == uid && hasAnyRole(['CANDIDATE']);
+    }
+
+    function canManageCandidateFiles(uid) {
+      return ownsCandidateFolder(uid) || isPlatformAdmin();
+    }
+
+    function validCandidateUpload() {
+      return request.resource.size < 10485760 &&
+        request.resource.contentType.matches('application/pdf|application/msword|application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    }
+
+    match /candidate-cv/{uid}/{allPaths=**} {
+      allow read: if canManageCandidateFiles(uid);
+      allow create, update: if canManageCandidateFiles(uid) && validCandidateUpload();
+      allow delete: if canManageCandidateFiles(uid);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

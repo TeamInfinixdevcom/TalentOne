@@ -13,8 +13,8 @@
     "moduleResolution": "Bundler",
     "noEmit": true,
     "paths": {
-      "@talentone/config/*": ["packages/config/*"],
-      "@talentone/*": ["packages/*/src/*"]
+      "@talentone/auth": ["packages/auth/src/index"],
+      "@talentone/database": ["packages/database/src/index"]
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,

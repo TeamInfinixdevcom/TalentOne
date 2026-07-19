@@ -46,3 +46,9 @@ It does not implement the flow and it does not include UI or business logic.
 - Sessions must survive refresh through Firebase Auth persistence.
 - Claims should be refreshed after privilege changes.
 - Disabled or suspended users must be blocked at the route and access layer.
+
+## Backend Synchronization
+
+- Auth user creation is mirrored into Firestore by backend triggers.
+- Firestore profile and role changes are the source of truth for claims.
+- The client forces a token refresh after auth changes until claims settle.

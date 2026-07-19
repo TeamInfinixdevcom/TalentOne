@@ -1,0 +1,284 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function roleList() {
+      return signedIn() && request.auth.token.roles is list ? request.auth.token.roles : [];
+    }
+
+    function hasAnyRole(allowedRoles) {
+      return signedIn() && roleList().hasAny(allowedRoles);
+    }
+
+    function isPlatformAdmin() {
+      return hasAnyRole(['MASTER', 'ADMIN']);
+    }
+
+    function isCandidateRole() {
+      return hasAnyRole(['CANDIDATE']);
+    }
+
+    function ownsUser(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function ownsCandidateProfile(uid) {
+      return ownsUser(uid) && isCandidateRole();
+    }
+
+    function isOrgMember(orgId) {
+      return signedIn() && exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
+    }
+
+    function isOrgOwner(orgId) {
+      return signedIn() && exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)).data.role in ['COMPANY_OWNER'];
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).changedKeys();
+    }
+
+    function canSelfUpdateUserProfile() {
+      return changedKeys().hasOnly([
+        'displayName',
+        'photoURL',
+        'phoneNumber',
+        'locale',
+        'timezone',
+        'headline',
+        'bio',
+        'updatedAt',
+        'lastLoginAt'
+      ]);
+    }
+
+    function isNullableString(value) {
+      return value == null || value is string;
+    }
+
+    function isNonEmptyString(value) {
+      return value is string && value.size() > 0;
+    }
+
+    function isCandidateProfileStatus(value) {
+      return value in ['draft', 'in_progress', 'in_review', 'published', 'archived'];
+    }
+
+    function isCandidateVisibility(value) {
+      return value in ['private', 'public', 'restricted'];
+    }
+
+    function isCandidateCompletionState(value) {
+      return value in ['empty', 'partial', 'complete', 'publishable'];
+    }
+
+    function isCandidateProfileData(data) {
+      return data.keys().hasOnly([
+        'uid',
+        'status',
+        'visibility',
+        'completionPercentage',
+        'completionState',
+        'headline',
+        'location',
+        'summary',
+        'currentCVId',
+        'primaryCVPath',
+        'primaryCVUrl',
+        'lastPublishedAt',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      isNonEmptyString(data.uid) &&
+      isCandidateProfileStatus(data.status) &&
+      isCandidateVisibility(data.visibility) &&
+      data.completionPercentage is int &&
+      data.completionPercentage >= 0 &&
+      data.completionPercentage <= 100 &&
+      isCandidateCompletionState(data.completionState) &&
+      isNullableString(data.headline) &&
+      isNullableString(data.location) &&
+      isNullableString(data.summary) &&
+      isNullableString(data.currentCVId) &&
+      isNullableString(data.primaryCVPath) &&
+      isNullableString(data.primaryCVUrl);
+    }
+
+    function isDateStringOrNull(value) {
+      return value == null || value is string;
+    }
+
+    function isCandidateEducationData(data) {
+      return data.keys().hasOnly([
+        'schoolName',
+        'degree',
+        'fieldOfStudy',
+        'startDate',
+        'endDate',
+        'currentlyStudying',
+        'description',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      isNonEmptyString(data.schoolName) &&
+      isNullableString(data.degree) &&
+      isNullableString(data.fieldOfStudy) &&
+      isDateStringOrNull(data.startDate) &&
+      isDateStringOrNull(data.endDate) &&
+      data.currentlyStudying is bool &&
+      isNullableString(data.description);
+    }
+
+    function isCandidateExperienceData(data) {
+      return data.keys().hasOnly([
+        'companyName',
+        'title',
+        'employmentType',
+        'location',
+        'startDate',
+        'endDate',
+        'currentlyWorking',
+        'summary',
+        'responsibilities',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      isNonEmptyString(data.companyName) &&
+      isNullableString(data.title) &&
+      (data.employmentType == null || data.employmentType in ['full_time', 'part_time', 'contract', 'temporary', 'internship', 'freelance']) &&
+      isNullableString(data.location) &&
+      isDateStringOrNull(data.startDate) &&
+      isDateStringOrNull(data.endDate) &&
+      data.currentlyWorking is bool &&
+      isNullableString(data.summary) &&
+      data.responsibilities is list;
+    }
+
+    function isCandidateCertificationData(data) {
+      return data.keys().hasOnly([
+        'name',
+        'issuer',
+        'issueDate',
+        'expirationDate',
+        'credentialId',
+        'credentialUrl',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      isNonEmptyString(data.name) &&
+      isNullableString(data.issuer) &&
+      isDateStringOrNull(data.issueDate) &&
+      isDateStringOrNull(data.expirationDate) &&
+      isNullableString(data.credentialId) &&
+      isNullableString(data.credentialUrl);
+    }
+
+    function isCandidateSkillData(data) {
+      return data.keys().hasOnly([
+        'name',
+        'level',
+        'yearsOfExperience',
+        'verified',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      isNonEmptyString(data.name) &&
+      (data.level == null || data.level in ['beginner', 'intermediate', 'advanced', 'expert']) &&
+      (data.yearsOfExperience == null || data.yearsOfExperience is int) &&
+      data.verified is bool;
+    }
+
+    function isCandidateDocumentData(uid, data) {
+      return data.keys().hasOnly([
+        'type',
+        'title',
+        'storagePath',
+        'downloadUrl',
+        'fileName',
+        'mimeType',
+        'fileSize',
+        'version',
+        'isCurrent',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.type in ['cv', 'cover_letter', 'portfolio', 'other'] &&
+      isNonEmptyString(data.title) &&
+      isNonEmptyString(data.storagePath) &&
+      data.storagePath.matches('^candidate-cv/' + uid + '/.*$') &&
+      isNullableString(data.downloadUrl) &&
+      isNonEmptyString(data.fileName) &&
+      isNonEmptyString(data.mimeType) &&
+      data.fileSize is int &&
+      data.fileSize >= 0 &&
+      data.version is int &&
+      data.version >= 1 &&
+      data.isCurrent is bool;
+    }
+
+    match /users/{uid} {
+      allow read: if ownsUser(uid) || isPlatformAdmin();
+      allow create: if false;
+      allow update: if ownsUser(uid) && canSelfUpdateUserProfile() || isPlatformAdmin();
+      allow delete: if isPlatformAdmin();
+    }
+
+    match /organizations/{organizationId} {
+      allow read: if isPlatformAdmin() || isOrgMember(organizationId);
+      allow create: if isPlatformAdmin();
+      allow update: if isPlatformAdmin() || isOrgOwner(organizationId);
+      allow delete: if isPlatformAdmin();
+
+      match /members/{memberUid} {
+        allow read: if isPlatformAdmin() || ownsUser(memberUid) || isOrgMember(organizationId);
+        allow create, update, delete: if isPlatformAdmin() || isOrgOwner(organizationId);
+      }
+    }
+
+    match /candidateProfiles/{uid} {
+      allow read: if ownsCandidateProfile(uid) || isPlatformAdmin();
+      allow create: if (ownsCandidateProfile(uid) || isPlatformAdmin()) && request.resource.data.uid == uid && isCandidateProfileData(request.resource.data);
+      allow update: if (ownsCandidateProfile(uid) || isPlatformAdmin()) && request.resource.data.uid == uid && isCandidateProfileData(request.resource.data);
+      allow delete: if isPlatformAdmin();
+
+      match /education/{educationId} {
+        allow read: if ownsCandidateProfile(uid) || isPlatformAdmin();
+        allow create, update: if (ownsCandidateProfile(uid) || isPlatformAdmin()) && isCandidateEducationData(request.resource.data);
+        allow delete: if ownsCandidateProfile(uid) || isPlatformAdmin();
+      }
+
+      match /experience/{experienceId} {
+        allow read: if ownsCandidateProfile(uid) || isPlatformAdmin();
+        allow create, update: if (ownsCandidateProfile(uid) || isPlatformAdmin()) && isCandidateExperienceData(request.resource.data);
+        allow delete: if ownsCandidateProfile(uid) || isPlatformAdmin();
+      }
+
+      match /certifications/{certificationId} {
+        allow read: if ownsCandidateProfile(uid) || isPlatformAdmin();
+        allow create, update: if (ownsCandidateProfile(uid) || isPlatformAdmin()) && isCandidateCertificationData(request.resource.data);
+        allow delete: if ownsCandidateProfile(uid) || isPlatformAdmin();
+      }
+
+      match /skills/{skillId} {
+        allow read: if ownsCandidateProfile(uid) || isPlatformAdmin();
+        allow create, update: if (ownsCandidateProfile(uid) || isPlatformAdmin()) && isCandidateSkillData(request.resource.data);
+        allow delete: if ownsCandidateProfile(uid) || isPlatformAdmin();
+      }
+
+      match /documents/{documentId} {
+        allow read: if ownsCandidateProfile(uid) || isPlatformAdmin();
+        allow create, update: if (ownsCandidateProfile(uid) || isPlatformAdmin()) && isCandidateDocumentData(uid, request.resource.data);
+        allow delete: if ownsCandidateProfile(uid) || isPlatformAdmin();
+      }
+    }
+
+    match /invitations/{invitationId} {
+      allow read, create, update, delete: if isPlatformAdmin();
+    }
+  }
+}

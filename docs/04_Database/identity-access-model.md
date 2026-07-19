@@ -19,8 +19,11 @@ Suggested fields:
 - `createdAt`
 - `updatedAt`
 - `primaryContext` (`platform`, `company`, `candidate`)
+- `roles`
 - `currentOrganizationId` nullable
 - `currentRole` nullable
+- `claimsSyncedAt`
+- `claimsVersion`
 
 ### `organizations/{organizationId}`
 
