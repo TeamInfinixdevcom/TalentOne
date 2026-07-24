@@ -7,10 +7,10 @@
     "@talentone/database": "workspace:*",
     "firebase": "^12.9.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0"
+    "@types/react-dom": "^19.2.3"
   }
 }
