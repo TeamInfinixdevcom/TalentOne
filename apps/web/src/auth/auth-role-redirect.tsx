@@ -2,8 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 
-import { getRoleLandingPath } from "@talentone/auth";
-
+import { getRoleLandingPath } from "./redirects";
 import { useTalentOneAuthState } from "./auth-context";
 
 export interface AuthRoleRedirectProps {
@@ -23,22 +22,31 @@ export function AuthRoleRedirect({
   fallback = null,
   targetPath,
 }: AuthRoleRedirectProps) {
-  const { loading, isAuthenticated, role } = useTalentOneAuthState();
+  const {
+    loading,
+    authenticated,
+    claims,
+  } = useTalentOneAuthState();
+
+  const role = claims?.role ?? null;
 
   useEffect(() => {
-    if (loading || !isAuthenticated || !role) {
+    if (loading || !authenticated || !role) {
       return;
     }
 
-    redirect(targetPath ?? getRoleLandingPath(role));
-  }, [isAuthenticated, loading, role, targetPath]);
+    redirect(
+      targetPath ?? getRoleLandingPath(role),
+    );
+  }, [
+    authenticated,
+    loading,
+    role,
+    targetPath,
+  ]);
 
   if (loading) {
     return <>{fallback}</>;
-  }
-
-  if (isAuthenticated && role) {
-    return null;
   }
 
   return <>{children}</>;
