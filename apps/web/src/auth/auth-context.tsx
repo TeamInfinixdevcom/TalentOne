@@ -1,238 +1,301 @@
-"use client";
+  "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
-import { onIdTokenChanged, type Auth } from "firebase/auth";
+  import {
+    createContext,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+    type ReactNode,
+  } from "react";
 
-import { auth as defaultAuth } from "../lib/firebase/auth";
-import {
-  getRedirectPathForRoles,
-  initializeAuthPersistence,
-  logout as signOut,
-  refreshSession as refreshAuthSession,
-  resolveClaimsForUser,
-  resetPassword,
-  sendVerificationEmail,
-  signInWithEmailPassword,
-  signInWithGoogle,
-  signUpWithEmailPassword,
-  type AuthSessionState,
-  type EmailPasswordCredentials,
-  type SignUpWithEmailPasswordInput,
-  type TalentOneClaims,
-  type TalentOneRole,
-} from "@talentone/auth";
+  import {
+    onIdTokenChanged,
+    type Auth,
+    type User,
+  } from "firebase/auth";
 
-type AuthContextValue = AuthSessionState & {
-  claims: TalentOneClaims | null;
-  signInWithEmailPassword: (credentials: EmailPasswordCredentials) => Promise<void>;
-  signUpWithEmailPassword: (input: SignUpWithEmailPasswordInput) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  sendVerificationEmail: () => Promise<void>;
-  logout: () => Promise<void>;
-  refreshSession: () => Promise<void>;
-  getRedirectPath: () => string;
-};
+  import { auth as defaultAuth } from "../lib/firebase/auth";
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+  import type { TalentOneClaims } from "./claims";
+  import { getRedirectPathForRoles } from "./redirects";
 
-function emptyState(): AuthSessionState {
-  return {
+  import {
+    initializeAuthPersistence,
+    logout,
+    refreshClaims,
+    refreshSession,
+    resolveClaimsForUser,
+    resetPassword,
+    sendVerificationEmail,
+    signInWithEmailPassword,
+    signInWithGoogle,
+    signUpWithEmailPassword,
+  } from "./services";
+
+  import type {
+    AuthState,
+    EmailPasswordCredentials,
+    SignUpWithEmailPasswordInput,
+  } from "./state";
+
+  import type { TalentOneRole } from "./roles";
+
+  export interface AuthContextValue extends AuthState {
+    signInWithEmailPassword(
+      credentials: EmailPasswordCredentials,
+    ): Promise<void>;
+
+    signUpWithEmailPassword(
+      input: SignUpWithEmailPasswordInput,
+    ): Promise<void>;
+
+    signInWithGoogle(): Promise<void>;
+
+    logout(): Promise<void>;
+
+    refreshSession(): Promise<void>;
+
+    refreshClaims(): Promise<void>;
+
+    resetPassword(email: string): Promise<void>;
+
+    sendVerificationEmail(): Promise<void>;
+
+    getRedirectPath(): string;
+  }
+
+  const AuthContext =
+    createContext<AuthContextValue | null>(null);
+
+  const INITIAL_STATE: AuthState = {
     user: null,
     claims: null,
-    roles: [],
-    role: null,
-    isAuthenticated: false,
-    isEmailVerified: false,
+    initialized: false,
+    authenticated: false,
     loading: true,
-    error: null,
-  };
-}
+  }
 
-export interface TalentOneAuthProviderProps {
-  children: ReactNode;
-  authInstance?: Auth | null;
-}
+  export interface TalentOneAuthProviderProps {
+    children: ReactNode;
+    authInstance?: Auth | null;
+  }
 
-export function TalentOneAuthProvider({
-  children,
-  authInstance = defaultAuth,
-}: TalentOneAuthProviderProps) {
-  const [state, setState] = useState<AuthSessionState>(emptyState);
-  const activeAuth = authInstance;
+  export function TalentOneAuthProvider({
+    children,
+    authInstance = defaultAuth,
+  }: TalentOneAuthProviderProps) {
+    const auth = authInstance;
 
-  useEffect(() => {
-    if (!activeAuth) {
-      setState((current) => ({ ...current, loading: false }));
-      return;
-    }
+    const [state, setState] =
+      useState<AuthState>(INITIAL_STATE);
 
-    let mounted = true;
-    let unsubscribe = () => {};
+    useEffect(() => {
+      if (!auth) {
+        setState({
+          ...INITIAL_STATE,
+          loading: false,
+          initialized: true,
+        });
 
-    void initializeAuthPersistence(activeAuth)
-      .catch((error: unknown) => {
-        if (!mounted) {
-          return;
-        }
+        return;
+      }
 
-        setState((current) => ({
-          ...current,
-          error: error instanceof Error ? error : new Error("Failed to initialize auth persistence."),
-        }));
-      })
-      .finally(() => {
-        if (!mounted) {
-          return;
-        }
+      let mounted = true;
 
-        unsubscribe = onIdTokenChanged(activeAuth, async (user) => {
+      let unsubscribe = () => {};
+
+      void initializeAuthPersistence(auth)
+        .catch(console.error)
+        .finally(() => {
           if (!mounted) {
             return;
           }
 
-          if (!user) {
-            setState({
-              user: null,
-              claims: null,
-              roles: [],
-              role: null,
-              isAuthenticated: false,
-              isEmailVerified: false,
-              loading: false,
-              error: null,
-            });
-            return;
-          }
+          unsubscribe = onIdTokenChanged(
+            auth,
+            async (user: User | null) => {
+              if (!mounted) {
+                return;
+              }
 
-          try {
-            const claims = await resolveClaimsForUser(user);
-            if (!mounted) {
-              return;
-            }
+              if (!user) {
+                setState({
+                  user: null,
+                  claims: null,
+                  authenticated: false,
+                  initialized: true,
+                  loading: false,
+                });
 
-            setState({
-              user,
-              claims,
-              roles: claims.roles,
-              role: claims.role,
-              isAuthenticated: true,
-              isEmailVerified: Boolean(user.emailVerified || claims.emailVerified),
-              loading: false,
-              error: null,
-            });
-          } catch (error: unknown) {
-            if (!mounted) {
-              return;
-            }
+                return;
+              }
 
-            setState({
-              user,
-              claims: null,
-              roles: [],
-              role: null,
-              isAuthenticated: true,
-              isEmailVerified: Boolean(user.emailVerified),
-              loading: false,
-              error: error instanceof Error ? error : new Error("Failed to resolve auth claims."),
-            });
-          }
+              try {
+                const claims =
+                  await resolveClaimsForUser(user);
+
+                setState({
+                  user,
+                  claims,
+                  authenticated: true,
+                  initialized: true,
+                  loading: false,
+                });
+              } catch (error) {
+                console.error(error);
+
+                setState({
+                  user,
+                  claims: null,
+                  authenticated: true,
+                  initialized: true,
+                  loading: false,
+                });
+              }
+            },
+          );
         });
-      });
 
-    return () => {
-      mounted = false;
-      unsubscribe();
-    };
-  }, [activeAuth]);
+      return () => {
+        mounted = false;
+        unsubscribe();
+      };
+      }, [auth]);
+    const value = useMemo<AuthContextValue>(() => ({
+      ...state,
 
-  const value: AuthContextValue = {
-    ...state,
-    signInWithEmailPassword: async (credentials) => {
-      if (!activeAuth) {
-        throw new Error("Firebase Auth is not initialized.");
-      }
+      async signInWithEmailPassword(credentials) {
+        if (!auth) {
+          throw new Error("Firebase Auth is not initialized.");
+        }
 
-      await signInWithEmailPassword(activeAuth, credentials);
-    },
-    signUpWithEmailPassword: async (input) => {
-      if (!activeAuth) {
-        throw new Error("Firebase Auth is not initialized.");
-      }
+        await signInWithEmailPassword(auth, credentials);
+      },
 
-      await signUpWithEmailPassword(activeAuth, input);
-    },
-    signInWithGoogle: async () => {
-      if (!activeAuth) {
-        throw new Error("Firebase Auth is not initialized.");
-      }
+      async signUpWithEmailPassword(input) {
+        if (!auth) {
+          throw new Error("Firebase Auth is not initialized.");
+        }
 
-      await signInWithGoogle(activeAuth);
-    },
-    resetPassword: async (email) => {
-      if (!activeAuth) {
-        throw new Error("Firebase Auth is not initialized.");
-      }
+        await signUpWithEmailPassword(auth, input);
+      },
 
-      await resetPassword(activeAuth, email);
-    },
-    sendVerificationEmail: async () => {
-      if (!activeAuth) {
-        throw new Error("Firebase Auth is not initialized.");
-      }
+      async signInWithGoogle() {
+        if (!auth) {
+          throw new Error("Firebase Auth is not initialized.");
+        }
 
-      await sendVerificationEmail(activeAuth);
-    },
-    logout: async () => {
-      if (!activeAuth) {
-        throw new Error("Firebase Auth is not initialized.");
-      }
+        await signInWithGoogle(auth);
+      },
 
-      await signOut(activeAuth);
-    },
-    refreshSession: async () => {
-      if (!activeAuth) {
-        throw new Error("Firebase Auth is not initialized.");
-      }
+      async logout() {
+        if (!auth) {
+          throw new Error("Firebase Auth is not initialized.");
+        }
 
-      await refreshAuthSession(activeAuth);
-    },
-    getRedirectPath: () => getRedirectPathForRoles(state.roles),
-  };
+        await logout(auth);
+      },
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+      async refreshSession() {
+        if (!auth) {
+          throw new Error("Firebase Auth is not initialized.");
+        }
 
-export function useTalentOneAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
+        await refreshSession(auth);
 
-  if (!context) {
-    throw new Error("useTalentOneAuth must be used inside TalentOneAuthProvider.");
+        const claims = await refreshClaims(auth);
+
+        setState((current) => ({
+          ...current,
+          claims,
+        }));
+      },
+
+      async refreshClaims() {
+        if (!auth) {
+          throw new Error("Firebase Auth is not initialized.");
+        }
+
+        const claims = await refreshClaims(auth);
+
+        setState((current) => ({
+          ...current,
+          claims,
+        }));
+      },
+
+      async resetPassword(email) {
+        if (!auth) {
+          throw new Error("Firebase Auth is not initialized.");
+        }
+
+        await resetPassword(auth, email);
+      },
+
+      async sendVerificationEmail() {
+        if (!auth) {
+          throw new Error("Firebase Auth is not initialized.");
+        }
+
+        await sendVerificationEmail(auth);
+      },
+
+      getRedirectPath() {
+        return getRedirectPathForRoles(
+          state.claims?.roles ?? [],
+        );
+      },
+    }), [auth, state]);
+
+    return (
+      <AuthContext.Provider value={value}>
+        {children}
+      </AuthContext.Provider>
+    );
   }
 
-  return context;
-}
+  export function useTalentOneAuth(): AuthContextValue {
+    const context = useContext(AuthContext);
 
-export function useTalentOneAuthState(): AuthSessionState {
-  const context = useTalentOneAuth();
-  return {
-    user: context.user,
-    claims: context.claims,
-    roles: context.roles,
-    role: context.role,
-    isAuthenticated: context.isAuthenticated,
-    isEmailVerified: context.isEmailVerified,
-    loading: context.loading,
-    error: context.error,
-  };
-}
+    if (!context) {
+      throw new Error(
+        "useTalentOneAuth must be used within TalentOneAuthProvider.",
+      );
+    }
 
-export function useTalentOneRole(): TalentOneRole | null {
-  return useTalentOneAuth().role;
-}
+    return context;
+  }
+
+  export function useTalentOneAuthState(): AuthState {
+    const {
+      user,
+      claims,
+      authenticated,
+      initialized,
+      loading,
+    } = useTalentOneAuth();
+
+    return {
+      user,
+      claims,
+      authenticated,
+      initialized,
+      loading,
+    };
+  }
+
+  export function useTalentOneRole(): TalentOneRole | null {
+    return (
+      useTalentOneAuth().claims?.role ??
+      null
+    );
+  }
+
+  export function useTalentOneClaims(): TalentOneClaims | null {
+    return useTalentOneAuth().claims;
+  }
+
+  export function useAuthenticatedUser(): User | null {
+    return useTalentOneAuth().user;
+  }
