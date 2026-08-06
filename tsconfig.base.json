@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "allowJs": false,
-    "baseUrl": ".",
     "composite": false,
     "declaration": false,
     "esModuleInterop": true,
@@ -13,8 +12,8 @@
     "moduleResolution": "Bundler",
     "noEmit": true,
     "paths": {
-      "@talentone/auth": ["packages/auth/src/index"],
-      "@talentone/database": ["packages/database/src/index"]
+      "@talentone/auth": ["./packages/auth/src/index"],
+      "@talentone/database": ["./packages/database/src/index"]
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,

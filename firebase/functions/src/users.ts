@@ -5,6 +5,7 @@ import { initializeApp } from 'firebase-admin/app';
 
 import { loadUserDocument, syncCustomClaims } from './lib/claims.js';
 import { ensureCandidateProfileShell } from './lib/candidate.js';
+import { ensureCompanyShell } from './lib/company.js';
 import { markUserDeleted, upsertUserDocument } from './lib/user-sync.js';
 
 initializeApp();
@@ -17,6 +18,7 @@ export const syncUserOnCreate = authUser().onCreate(async (record) => {
   const syncedUser = await upsertUserDocument(record);
   await syncCustomClaims(record.uid, syncedUser);
   await ensureCandidateProfileShell(record.uid, syncedUser);
+  await ensureCompanyShell(record.uid, syncedUser);
 });
 
 export const syncUserOnDelete = authUser().onDelete(async (record) => {
@@ -43,4 +45,5 @@ export const syncClaimsOnUserWrite = onDocumentWritten('users/{uid}', async (eve
 
   await syncCustomClaims(uid, user);
   await ensureCandidateProfileShell(uid, user);
+  await ensureCompanyShell(uid, user);
 });

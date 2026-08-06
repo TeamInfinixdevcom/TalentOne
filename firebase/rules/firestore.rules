@@ -221,6 +221,129 @@ service cloud.firestore {
       data.isCurrent is bool;
     }
 
+    function isCompanyOrganizationStatus(value) {
+      return value in ['draft', 'active', 'suspended', 'archived'];
+    }
+
+    function isCompanyMemberRole(value) {
+      return value in ['COMPANY_OWNER', 'COMPANY_USER', 'RECRUITER'];
+    }
+
+    function isCompanyMemberStatus(value) {
+      return value in ['invited', 'active', 'disabled'];
+    }
+
+    function isCompanyOrganizationData(data) {
+      return data.keys().hasOnly([
+        'organizationId',
+        'status',
+        'name',
+        'legalName',
+        'slug',
+        'createdByUid',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      isNonEmptyString(data.organizationId) &&
+      isCompanyOrganizationStatus(data.status) &&
+      isNullableString(data.name) &&
+      isNullableString(data.legalName) &&
+      isNullableString(data.slug) &&
+      isNonEmptyString(data.createdByUid);
+    }
+
+    function isCompanyMemberData(data) {
+      return data.keys().hasOnly([
+        'uid',
+        'organizationId',
+        'role',
+        'status',
+        'invitedByUid',
+        'joinedAt',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      isNonEmptyString(data.uid) &&
+      isNonEmptyString(data.organizationId) &&
+      isCompanyMemberRole(data.role) &&
+      isCompanyMemberStatus(data.status) &&
+      isNullableString(data.invitedByUid);
+    }
+
+    function isJobStatus(value) {
+      return value in ['draft', 'published', 'paused', 'closed', 'archived'];
+    }
+
+    function isJobVisibility(value) {
+      return value in ['public', 'private'];
+    }
+
+    function isJobModality(value) {
+      return value in ['onsite', 'hybrid', 'remote'];
+    }
+
+    function isJobSeniority(value) {
+      return value == null || value in ['intern', 'junior', 'semi_senior', 'senior', 'lead'];
+    }
+
+    function isJobEmploymentType(value) {
+      return value in ['full_time', 'part_time', 'contract', 'temporary', 'internship', 'freelance'];
+    }
+
+    function isJobSalaryData(value) {
+      return value == null || (
+        value is map &&
+        (value.min == null || value.min is number) &&
+        (value.max == null || value.max is number) &&
+        (value.period == null || value.period in ['hourly', 'monthly', 'yearly'])
+      );
+    }
+
+    function isJobData(data) {
+      return data.keys().hasOnly([
+        'jobId',
+        'organizationId',
+        'recruiterId',
+        'title',
+        'description',
+        'requirements',
+        'responsibilities',
+        'skills',
+        'benefits',
+        'modality',
+        'location',
+        'salary',
+        'currency',
+        'seniority',
+        'employmentType',
+        'status',
+        'visibility',
+        'createdAt',
+        'updatedAt',
+        'publishedAt',
+        'closedAt'
+      ]) &&
+      isNonEmptyString(data.jobId) &&
+      isNonEmptyString(data.organizationId) &&
+      isNonEmptyString(data.recruiterId) &&
+      isNonEmptyString(data.title) &&
+      isNonEmptyString(data.description) &&
+      data.requirements is list &&
+      data.responsibilities is list &&
+      data.skills is list &&
+      data.benefits is list &&
+      isJobModality(data.modality) &&
+      isNullableString(data.location) &&
+      isJobSalaryData(data.salary) &&
+      isNullableString(data.currency) &&
+      isJobSeniority(data.seniority) &&
+      isJobEmploymentType(data.employmentType) &&
+      isJobStatus(data.status) &&
+      isJobVisibility(data.visibility) &&
+      (data.publishedAt == null || data.publishedAt is timestamp) &&
+      (data.closedAt == null || data.closedAt is timestamp);
+    }
+
     match /users/{uid} {
       allow read: if ownsUser(uid) || isPlatformAdmin();
       allow create: if false;
@@ -229,14 +352,16 @@ service cloud.firestore {
     }
 
     match /organizations/{organizationId} {
-      allow read: if isPlatformAdmin() || isOrgMember(organizationId);
-      allow create: if isPlatformAdmin();
-      allow update: if isPlatformAdmin() || isOrgOwner(organizationId);
+      allow read: if isPlatformAdmin() || isOrgMember(organizationId) || (signedIn() && resource.data.createdByUid == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.organizationId == organizationId && request.resource.data.createdByUid == request.auth.uid && isCompanyOrganizationData(request.resource.data);
+      allow update: if (isPlatformAdmin() || isOrgOwner(organizationId) || (signedIn() && resource.data.createdByUid == request.auth.uid)) && request.resource.data.organizationId == organizationId && isCompanyOrganizationData(request.resource.data);
       allow delete: if isPlatformAdmin();
 
       match /members/{memberUid} {
         allow read: if isPlatformAdmin() || ownsUser(memberUid) || isOrgMember(organizationId);
-        allow create, update, delete: if isPlatformAdmin() || isOrgOwner(organizationId);
+        allow create: if isPlatformAdmin() || (signedIn() && memberUid == request.auth.uid && request.resource.data.organizationId == organizationId && request.resource.data.uid == memberUid && request.resource.data.role == 'COMPANY_OWNER' && isCompanyMemberData(request.resource.data)) || isOrgOwner(organizationId);
+        allow update: if (isPlatformAdmin() || isOrgOwner(organizationId) || ownsUser(memberUid)) && request.resource.data.organizationId == organizationId && request.resource.data.uid == memberUid && isCompanyMemberData(request.resource.data);
+        allow delete: if isPlatformAdmin() || isOrgOwner(organizationId) || ownsUser(memberUid);
       }
     }
 
@@ -275,6 +400,13 @@ service cloud.firestore {
         allow create, update: if (ownsCandidateProfile(uid) || isPlatformAdmin()) && isCandidateDocumentData(uid, request.resource.data);
         allow delete: if ownsCandidateProfile(uid) || isPlatformAdmin();
       }
+    }
+
+    match /jobs/{jobId} {
+      allow read: if isPlatformAdmin() || (resource.data.status == 'published' && resource.data.visibility == 'public') || isOrgMember(resource.data.organizationId);
+      allow create: if signedIn() && request.resource.data.jobId == jobId && request.resource.data.recruiterId == request.auth.uid && isOrgMember(request.resource.data.organizationId) && isJobData(request.resource.data);
+      allow update: if (isPlatformAdmin() || isOrgMember(resource.data.organizationId)) && request.resource.data.jobId == jobId && request.resource.data.organizationId == resource.data.organizationId && isJobData(request.resource.data);
+      allow delete: if isPlatformAdmin() || isOrgOwner(resource.data.organizationId);
     }
 
     match /invitations/{invitationId} {
