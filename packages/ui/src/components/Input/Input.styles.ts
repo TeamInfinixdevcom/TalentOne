@@ -47,7 +47,7 @@ export const inputVariants: Record<
 
   filled: {
     backgroundColor: colors.surface.secondary,
-    border: `1px solid transparent`,
+    border: "1px solid transparent",
   },
 
   outlined: {

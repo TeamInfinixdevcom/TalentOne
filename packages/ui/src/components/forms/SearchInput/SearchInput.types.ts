@@ -1,4 +1,4 @@
-import {
+import type {
   CSSProperties,
   InputHTMLAttributes,
 } from "react";

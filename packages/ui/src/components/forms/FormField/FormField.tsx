@@ -27,7 +27,7 @@ export const FormField = ({
       {...props}
     >
       {label && (
-        <label style={labelStyles}>
+        <label htmlFor={props.id} style={labelStyles}>
           {label}
           {required && (
             <span

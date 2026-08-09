@@ -21,8 +21,7 @@ export const Toast = ({
   ...props
 }: ToastProps) => {
   return (
-    <div
-      role="status"
+    <output
       style={{
         ...toastBaseStyles,
         ...toastVariants[variant],
@@ -52,7 +51,7 @@ export const Toast = ({
           ×
         </button>
       )}
-    </div>
+    </output>
   );
 };
 

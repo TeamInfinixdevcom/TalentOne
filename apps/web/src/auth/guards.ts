@@ -23,7 +23,7 @@ import {
 export function isAuthenticated(
   claims: TalentOneClaims | null | undefined,
 ): boolean {
-  return claims !== null && claims.uid !== null;
+  return claims != null && claims.uid !== null;
 }
 
 /**

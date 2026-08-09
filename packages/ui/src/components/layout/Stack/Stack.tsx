@@ -1,4 +1,4 @@
-import React, { CSSProperties } from "react";
+import React, { type CSSProperties } from "react";
 
 import { stackBaseStyles } from "./Stack.styles";
 import type { StackProps } from "./Stack.types";

@@ -11,6 +11,8 @@ import type { SwitchProps } from "./Switch.types";
 export const Switch = ({
   label,
   style,
+  checked,
+  defaultChecked,
   ...props
 }: SwitchProps) => {
   return (
@@ -18,6 +20,9 @@ export const Switch = ({
       <input
         type="checkbox"
         role="switch"
+        checked={checked}
+        defaultChecked={defaultChecked}
+        aria-checked={checked ?? defaultChecked ?? false}
         style={{
           ...switchStyles,
           ...style,

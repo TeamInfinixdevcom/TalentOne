@@ -3,7 +3,7 @@ import { user as authUser } from 'firebase-functions/v1/auth';
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { initializeApp } from 'firebase-admin/app';
 
-import { loadUserDocument, syncCustomClaims } from './lib/claims.js';
+import { type loadUserDocument, syncCustomClaims } from './lib/claims.js';
 import { ensureCandidateProfileShell } from './lib/candidate.js';
 import { ensureCompanyShell } from './lib/company.js';
 import { markUserDeleted, upsertUserDocument } from './lib/user-sync.js';

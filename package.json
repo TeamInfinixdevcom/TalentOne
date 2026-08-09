@@ -9,8 +9,8 @@
     "dev": "turbo run dev",
     "format": "biome check --write .",
     "format:check": "biome check .",
-    "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck"
+    "lint": "biome lint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

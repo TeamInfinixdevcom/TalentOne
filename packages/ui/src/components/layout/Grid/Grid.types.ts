@@ -1,4 +1,4 @@
-import { CSSProperties, HTMLAttributes, ReactNode } from "react";
+import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 
 export interface GridProps
   extends HTMLAttributes<HTMLDivElement> {

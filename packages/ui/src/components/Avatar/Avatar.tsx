@@ -35,10 +35,10 @@ export const Avatar = ({
   if (src) {
     return (
       <img
+        {...props}
         src={src}
         alt={alt ?? name ?? "Avatar"}
         style={avatarStyle}
-        {...props}
       />
     );
   }
