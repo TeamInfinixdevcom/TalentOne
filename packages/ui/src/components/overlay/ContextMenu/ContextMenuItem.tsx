@@ -17,12 +17,14 @@ export const ContextMenuItem = ({
   children,
   disabled = false,
   style,
+  tabIndex,
   ...props
 }: ContextMenuItemProps) => {
   return (
     <div
       role="menuitem"
       aria-disabled={disabled}
+      tabIndex={tabIndex ?? (disabled ? -1 : 0)}
       style={{
         ...itemStyles,
         opacity: disabled ? 0.5 : 1,

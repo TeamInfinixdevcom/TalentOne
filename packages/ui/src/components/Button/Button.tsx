@@ -1,7 +1,7 @@
 import React from "react";
 
 import { buttonBaseStyles, buttonSizes, buttonVariants } from "./Button.styles";
-import { ButtonProps } from "./Button.types";
+import type { ButtonProps } from "./Button.types";
 
 export const Button = ({
   children,

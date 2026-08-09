@@ -2,12 +2,22 @@
   "name": "@talentone/web",
   "private": true,
   "version": "0.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
     "@talentone/auth": "workspace:*",
     "@talentone/database": "workspace:*",
     "firebase": "^12.9.1",
+    "next": "^16.3.0",
+    "postcss": "^8.5.26",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

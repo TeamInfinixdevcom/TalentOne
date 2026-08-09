@@ -2,9 +2,9 @@
 
 import { useEffect, type ReactNode } from "react";
 
-import { getRoleLandingPath, hasAnyRole, type TalentOneRole } from "@talentone/auth";
-
 import { useTalentOneAuthState } from "./auth-context";
+import { getRoleLandingPath } from "./redirects";
+import { hasAnyRole, type TalentOneRole } from "./roles";
 
 export interface ProtectedRouteProps {
   children: ReactNode;
@@ -29,14 +29,17 @@ export function ProtectedRoute({
   unauthorizedRedirect,
   requireEmailVerified = true,
 }: ProtectedRouteProps) {
-  const { loading, isAuthenticated, isEmailVerified, roles, role } = useTalentOneAuthState();
+  const { loading, authenticated, claims } = useTalentOneAuthState();
+  const isEmailVerified = claims?.emailVerified ?? false;
+  const roles = claims?.roles ?? [];
+  const role = claims?.role ?? null;
 
   useEffect(() => {
     if (loading) {
       return;
     }
 
-    if (!isAuthenticated) {
+    if (!authenticated) {
       redirect(unauthenticatedRedirect);
       return;
     }
@@ -47,11 +50,11 @@ export function ProtectedRoute({
     }
 
     if (allowedRoles?.length && !hasAnyRole(roles, allowedRoles)) {
-      redirect(unauthorizedRedirect ?? getRoleLandingPath(role));
+      redirect(unauthorizedRedirect ?? (role ? getRoleLandingPath(role) : "/"));
     }
   }, [
     allowedRoles,
-    isAuthenticated,
+    authenticated,
     isEmailVerified,
     loading,
     role,

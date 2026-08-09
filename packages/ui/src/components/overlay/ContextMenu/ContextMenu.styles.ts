@@ -69,5 +69,5 @@ export const groupStyles: CSSProperties = {
 export const shortcutStyles: CSSProperties = {
   marginLeft: spacing[6],
   fontSize: typography.fontSize.xs,
-  color: colors.text.tertiary,
+  color: colors.text.muted,
 };

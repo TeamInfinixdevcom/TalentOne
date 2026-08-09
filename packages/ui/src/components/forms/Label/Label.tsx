@@ -9,12 +9,14 @@ import type { LabelProps } from "./Label.types";
 
 export const Label = ({
   children,
+  htmlFor,
   required = false,
   style,
   ...props
 }: LabelProps) => {
   return (
     <label
+      htmlFor={htmlFor}
       style={{
         ...labelStyles,
         ...style,

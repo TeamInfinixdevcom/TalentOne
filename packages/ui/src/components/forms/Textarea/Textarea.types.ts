@@ -1,4 +1,4 @@
-import {
+import type {
   CSSProperties,
   TextareaHTMLAttributes,
 } from "react";

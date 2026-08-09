@@ -1,6 +1,6 @@
-import {
+import type {
   CSSProperties,
-  HTMLAttributes,
+  OutputHTMLAttributes,
   ReactNode,
 } from "react";
 
@@ -11,7 +11,7 @@ export type ToastVariant =
   | "error";
 
 export interface ToastProps
-  extends HTMLAttributes<HTMLDivElement> {
+  extends OutputHTMLAttributes<HTMLOutputElement> {
   heading?: ReactNode;
   children: ReactNode;
   variant?: ToastVariant;

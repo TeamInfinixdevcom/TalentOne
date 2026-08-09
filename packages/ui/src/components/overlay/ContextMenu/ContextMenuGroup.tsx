@@ -19,7 +19,6 @@ export const ContextMenuGroup = ({
 }: ContextMenuGroupProps) => {
   return (
     <div
-      role="group"
       style={{
         ...groupStyles,
         ...style,

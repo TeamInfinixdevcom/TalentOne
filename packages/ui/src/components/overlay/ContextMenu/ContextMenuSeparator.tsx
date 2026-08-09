@@ -18,7 +18,6 @@ export const ContextMenuSeparator = ({
 }: ContextMenuSeparatorProps) => {
   return (
     <hr
-      role="separator"
       style={{
         ...separatorStyles,
         ...style,

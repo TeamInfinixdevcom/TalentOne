@@ -1,4 +1,4 @@
-import {
+import type {
   CSSProperties,
   HTMLAttributes,
   ReactNode,
@@ -11,7 +11,7 @@ export type AlertVariant =
   | "error";
 
 export interface AlertProps
-  extends HTMLAttributes<HTMLDivElement> {
+  extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   title?: ReactNode;
   children: ReactNode;
   variant?: AlertVariant;

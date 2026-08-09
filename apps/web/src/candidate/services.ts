@@ -336,11 +336,11 @@ async function markCurrentDocument(
   const batch = writeBatch(db);
   const targetRef = doc(db, candidateDocumentsPath(candidateUid), documentId);
 
-  currentDocuments.forEach((snapshot: QueryDocumentSnapshot<DocumentData>) => {
+  for (const snapshot of currentDocuments.docs as QueryDocumentSnapshot<DocumentData>[]) {
     if (snapshot.id !== documentId) {
       batch.update(snapshot.ref, { isCurrent: false, updatedAt: serverTimestamp() });
     }
-  });
+  }
 
   batch.update(targetRef, {
     isCurrent: true,

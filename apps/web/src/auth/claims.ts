@@ -38,7 +38,7 @@ export interface TalentOneClaims {
   permissions: TalentOnePermission[];
 }
 
-function toString(value: unknown): string | null {
+function toClaimString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0
     ? value
     : null;
@@ -65,7 +65,7 @@ function toStringArray(value: unknown): string[] {
 export function normalizeClaims(
   claims: Record<string, unknown>,
 ): TalentOneClaims {
-  const role = toString(claims.role) as TalentOneRole | null;
+  const role = toClaimString(claims.role) as TalentOneRole | null;
 
   const roles = toStringArray(
     claims.roles,
@@ -76,8 +76,8 @@ export function normalizeClaims(
   ) as TalentOnePermission[];
 
   return {
-    uid: toString(claims.uid),
-    email: toString(claims.email),
+    uid: toClaimString(claims.uid),
+    email: toClaimString(claims.email),
     emailVerified: toBoolean(claims.email_verified),
 
     role,
@@ -89,11 +89,11 @@ export function normalizeClaims(
           ? [role]
           : [],
 
-    primaryContext: toString(
+    primaryContext: toClaimString(
       claims.primaryContext,
     ),
 
-    currentOrganizationId: toString(
+    currentOrganizationId: toClaimString(
       claims.currentOrganizationId,
     ),
 
